@@ -1,0 +1,9 @@
+bin/
+obj/
+.dotnet_home/
+.nuget_cache/
+*.user
+*.suo
+.vs/
+.idea/
+.vscode/
