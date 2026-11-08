@@ -30,3 +30,4 @@ This report details how AI assistance was leveraged during development, where po
 ### Discrepancy 3: C# Record Attribute Placement
 - **AI Suggestion:** In positional records, `[JsonPropertyName]` was placed directly on positional parameters, causing C# compiler error `CS0592: Attribute 'JsonPropertyName' is not valid on this declaration type`.
 - **Our Correction:** We converted the DTOs into standard class models with explicit properties and dual constructors (parameterless for JSON deserialization and parameterized for clean test authoring).
+

@@ -53,3 +53,4 @@ public class GlobalExceptionMiddleware
         await context.Response.WriteAsync(json);
     }
 }
+

@@ -5,14 +5,20 @@ using SchoolAdmission.Api.Data;
 using SchoolAdmission.Api.Middleware;
 using SchoolAdmission.Api.Services;
 
+// Load .env file from root or current folder if exists (Node.js style developer convenience)
+LoadDotEnvFiles();
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Kestrel to listen on port 8080 by default (per assignment spec)
+// Configure Kestrel port: supports PORT env var, ASPNETCORE_URLS, or defaults to 8080 (per spec)
 builder.WebHost.ConfigureKestrel(options =>
 {
-    // If ASPNETCORE_URLS is set (e.g. in docker or command line), Kestrel will use it.
-    // Otherwise fallback to http://0.0.0.0:8080.
-    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
+    var portEnv = Environment.GetEnvironmentVariable("PORT");
+    if (!string.IsNullOrEmpty(portEnv) && int.TryParse(portEnv, out var customPort))
+    {
+        options.ListenAnyIP(customPort);
+    }
+    else if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
     {
         options.ListenAnyIP(8080);
     }
@@ -98,6 +104,48 @@ app.MapControllers();
 
 app.Run();
 
+static void LoadDotEnvFiles()
+{
+    try
+    {
+        var candidates = new[]
+        {
+            Path.Combine(Directory.GetCurrentDirectory(), ".env"),
+            Path.Combine(AppContext.BaseDirectory, ".env"),
+            Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env"),
+            Path.Combine(Directory.GetCurrentDirectory(), "..", ".env")
+        };
+
+        foreach (var path in candidates)
+        {
+            if (File.Exists(path))
+            {
+                foreach (var line in File.ReadAllLines(path))
+                {
+                    var trimmed = line.Trim();
+                    if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("#")) continue;
+
+                    var parts = trimmed.Split('=', 2);
+                    if (parts.Length == 2)
+                    {
+                        var key = parts[0].Trim();
+                        var value = parts[1].Trim().Trim('"', '\'');
+                        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key)))
+                        {
+                            Environment.SetEnvironmentVariable(key, value);
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+    catch
+    {
+        // Ignore .env read errors if file is locked or unavailable
+    }
+}
+
 static string ResolveConnectionString(IConfiguration configuration)
 {
     var raw = Environment.GetEnvironmentVariable("DATABASE_URL")
@@ -110,13 +158,17 @@ static string ResolveConnectionString(IConfiguration configuration)
     {
         var uri = new Uri(raw);
         var userInfo = uri.UserInfo.Split(':');
-        var user = userInfo.Length > 0 ? userInfo[0] : "postgres";
-        var pass = userInfo.Length > 1 ? userInfo[1] : "";
+        var user = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : "postgres";
+        var pass = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
         var host = uri.Host;
         var port = uri.Port > 0 ? uri.Port : 5432;
         var db = uri.AbsolutePath.TrimStart('/');
 
-        return $"Host={host};Port={port};Database={db};Username={user};Password={pass}";
+        var ssl = (raw.Contains("sslmode=require", StringComparison.OrdinalIgnoreCase) || host.Contains("neon.tech"))
+            ? ";SSL Mode=Require;Trust Server Certificate=true"
+            : "";
+
+        return $"Host={host};Port={port};Database={db};Username={user};Password={pass}{ssl}";
     }
 
     return raw;

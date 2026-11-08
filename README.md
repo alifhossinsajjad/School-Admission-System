@@ -83,3 +83,4 @@ dotnet test
    - Duplicate active hold prevention for a single student (`409 Conflict`).
    - Cross-student access prohibition (`403 Forbidden`).
    - Retrieval of student's applications via `GET /me/holds`.
+

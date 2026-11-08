@@ -132,3 +132,4 @@ public class ValidationAndRulesTests : IClassFixture<TestWebApplicationFactory>
         Assert.Contains(myHolds, h => h.ClassId == c2.Id && h.ClassName == "Class 6 - Day");
     }
 }
+

@@ -57,3 +57,4 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         _sqliteConnection?.Dispose();
     }
 }
+

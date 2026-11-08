@@ -69,3 +69,4 @@ This document outlines key engineering decisions, concurrency guarantees, and as
 - **Confirmation Idempotency:** If `POST /holds/{holdId}/confirm` is invoked multiple times for an already confirmed hold, it returns `200 OK` with `{ "holdId": "...", "status": "CONFIRMED" }` without incrementing `confirmedSeats`.
 - **Ownership Verification:** Only the student whose `X-Student-Id` matches the hold's `StudentId` can confirm or cancel the hold (`403 Forbidden` if mismatched).
 - **Cancellation:** `DELETE /holds/{holdId}` transitions an active hold to `CANCELLED` and returns `204 NoContent`. Confirmed admissions cannot be cancelled via this endpoint (`400 Bad Request`).
+

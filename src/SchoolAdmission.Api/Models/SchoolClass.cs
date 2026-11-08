@@ -10,3 +10,4 @@ public class SchoolClass
 
     public ICollection<SeatHold> Holds { get; set; } = new List<SeatHold>();
 }
+
