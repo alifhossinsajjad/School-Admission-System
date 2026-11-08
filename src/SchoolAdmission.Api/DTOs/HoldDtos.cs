@@ -19,6 +19,8 @@ public class CreateHoldResponse
     [JsonPropertyName("expiresAt")]
     public DateTime ExpiresAt { get; set; }
 
+    public CreateHoldResponse() { }
+
     public CreateHoldResponse(string holdId, string classId, string studentId, string status, DateTime expiresAt)
     {
         HoldId = holdId;
@@ -43,6 +45,8 @@ public class HoldResponse
     [JsonPropertyName("expiresAt")]
     public DateTime ExpiresAt { get; set; }
 
+    public HoldResponse() { }
+
     public HoldResponse(string holdId, string classId, string status, DateTime expiresAt)
     {
         HoldId = holdId;
@@ -59,6 +63,8 @@ public class ConfirmHoldResponse
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = string.Empty;
+
+    public ConfirmHoldResponse() { }
 
     public ConfirmHoldResponse(string holdId, string status)
     {
@@ -83,6 +89,8 @@ public class StudentHoldResponse
 
     [JsonPropertyName("expiresAt")]
     public DateTime ExpiresAt { get; set; }
+
+    public StudentHoldResponse() { }
 
     public StudentHoldResponse(string holdId, string classId, string className, string status, DateTime expiresAt)
     {

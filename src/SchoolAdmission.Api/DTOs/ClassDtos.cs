@@ -13,6 +13,14 @@ public class CreateClassRequest
     [Range(1, 100000, ErrorMessage = "Total seats must be greater than zero.")]
     [JsonPropertyName("totalSeats")]
     public int TotalSeats { get; set; }
+
+    public CreateClassRequest() { }
+
+    public CreateClassRequest(string name, int totalSeats)
+    {
+        Name = name;
+        TotalSeats = totalSeats;
+    }
 }
 
 public class CreateClassResponse
@@ -25,6 +33,8 @@ public class CreateClassResponse
 
     [JsonPropertyName("totalSeats")]
     public int TotalSeats { get; set; }
+
+    public CreateClassResponse() { }
 
     public CreateClassResponse(string id, string name, int totalSeats)
     {
@@ -53,6 +63,8 @@ public class ClassResponse
 
     [JsonPropertyName("availableSeats")]
     public int AvailableSeats { get; set; }
+
+    public ClassResponse() { }
 
     public ClassResponse(string id, string name, int totalSeats, int heldSeats, int confirmedSeats, int availableSeats)
     {
