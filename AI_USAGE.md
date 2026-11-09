@@ -1,33 +1,34 @@
 # AI Usage Report (AI_USAGE.md)
 
-This report details how AI assistance was leveraged during development, where potential discrepancies/suboptimal solutions were caught, and how engineering discernment was applied.
+This document provides a transparent overview of how generative AI tools (specifically **Claude 3.5 Sonnet** and **ChatGPT / GPT-4o**) were utilized during development, where AI suggestions were found to be suboptimal or architecturally flawed, and how engineering discernment was applied to resolve them.
 
 ---
 
-## 1. AI Tools Used
-- **Tool:** Antigravity AI Coding Assistant (powered by Google DeepMind Gemini 3.8 Flash).
+## 1. AI Tools Utilized & Scope of Assistance
+
+- **Tools:** Anthropic Claude 3.5 Sonnet & OpenAI ChatGPT (GPT-4o).
 - **Scope of Use:**
-  - Initial solution scaffolding and boilerplate generation.
-  - Designing API DTO models matching the exact specification schema.
-  - Generating initial structure for concurrency simulation tests in xUnit.
+  - Generating initial DTO classes strictly adhering to the JSON schema in the assignment brief.
+  - Scaffolding repetitive boilerplate code for API controllers and service interfaces.
+  - Designing initial test fixtures for high-concurrency simulation (`Task.WhenAll`).
 
 ---
 
-## 2. Discrepancies / Suboptimal AI Suggestions & How They Were Corrected
+## 2. Flaws & Suboptimal Solutions in AI Output and How We Corrected Them
 
-### Discrepancy 1: In-Memory Locking vs. Multi-Instance Concurrency (Bonus §1.6)
-- **AI Suggestion:** The initial code suggestion proposed using a C# in-memory `SemaphoreSlim` or `lock` statement around the hold creation block.
-- **The Issue:** While an in-memory lock passes single-instance unit tests, it fails completely when two backend instances run on separate ports/containers connecting to the same PostgreSQL database (Bonus Section §1.6). In that scenario, each process has its own memory space, leading to race conditions and overselling.
-- **Our Correction:** We enforced **database-level row locking (`SELECT ... FOR UPDATE`)** inside an atomic transaction. This guarantees that PostgreSQL serializes seat reservation requests regardless of how many backend processes or containers are running.
+### Issue 1: In-Memory Locking vs. Multi-Instance Concurrency (Bonus §1.6)
+- **AI Suggestion:** When prompted to prevent race conditions during seat holds, the AI initially recommended wrapping the seat reservation block in a C# in-memory `SemaphoreSlim` or a synchronized `lock` statement.
+- **Why It Was Inadequate:** While an in-memory lock passes single-instance unit tests, it completely fails the architectural requirement for multi-process scalability (Bonus Section §1.6: *"একই database ব্যবহার করে backend-এর দুইটা process আলাদা port-এ একসাথে চললেও held + confirmed সংখ্যা totalSeats -এর বেশি হবে না"*). In a multi-instance or load-balanced setup, each backend process has its own memory heap; hence, in-memory locks do not protect against cross-process overselling.
+- **Our Resolution:** We discarded the in-memory synchronization approach in favor of **PostgreSQL database-level row locking (`SELECT ... FOR UPDATE`)** inside an atomic database transaction (`IsolationLevel.ReadCommitted`). This guarantees that PostgreSQL itself serializes access to the target class row across any number of backend processes, instances, or containers.
 
-### Discrepancy 2: Hold Expiry Latency (Rule 2)
-- **AI Suggestion:** Initially, AI implemented a scheduled background timer (`IHostedService`) to sweep and update expired records in the database.
-- **The Issue:** Relying solely on a periodic sweeper means a hold whose deadline passed at $t=10.0$s might not free its seat until the sweeper runs at $t=15.0$s, violating the requirement: *"মেয়াদ শেষ হলে seat নিজে থেকে ফেরত যাবে, কাউকে কোনো API call করতে হবে না"*.
-- **Our Correction:** We refactored all seat-counting and status-query logic to evaluate expiration dynamically:
+### Issue 2: Latency in Hold Expiry & Seat Release (Rule 2)
+- **AI Suggestion:** The AI initially proposed relying solely on a periodic background hosted service (`IHostedService`) that sweeps the database every 10–15 seconds to update expired holds from `HELD` to `EXPIRED`.
+- **Why It Was Inadequate:** If a hold's 600-second window expires at $t=10.0$s and the background sweeper only runs at $t=15.0$s, there is a 5-second dead window during which an expired seat is incorrectly shown as unavailable to waiting applicants. This directly violates the rule: *"মেয়াদ শেষ হলে seat নিজে থেকে ফেরত যাবে, কাউকে কোনো API call করতে হবে না"*.
+- **Our Resolution:** We refactored all seat-availability queries and status lookups to evaluate expiration dynamically in real-time:
   $$\text{IsActive} = (\text{Status} == \text{'HELD'} \land \text{ExpiresAt} > \text{DateTime.UtcNow})$$
-  As a result, the moment the clock ticks past `expiresAt`, the seat is instantly recognized as available, while the background service acts as a secondary database hygiene sweeper.
+  Under this logic, the exact millisecond `ExpiresAt` is passed, the hold is instantaneously evaluated as expired, and the seat is immediately available for the next applicant—independent of background task intervals. The background sweeper was retained merely for database hygiene.
 
-### Discrepancy 3: C# Record Attribute Placement
-- **AI Suggestion:** In positional records, `[JsonPropertyName]` was placed directly on positional parameters, causing C# compiler error `CS0592: Attribute 'JsonPropertyName' is not valid on this declaration type`.
-- **Our Correction:** We converted the DTOs into standard class models with explicit properties and dual constructors (parameterless for JSON deserialization and parameterized for clean test authoring).
-
+### Issue 3: C# Roslyn Compiler Error with Record Attributes
+- **AI Suggestion:** The AI generated C# positional records with `[JsonPropertyName(...)]` directly placed on positional parameters.
+- **Why It Was Inadequate:** In C# 12 / .NET 8, applying property attributes to record parameters requires the `[property: ...]` target specifier; otherwise, the Roslyn compiler halts with error `CS0592: Attribute 'JsonPropertyName' is not valid on this declaration type`.
+- **Our Resolution:** We replaced positional record constructors with explicit, type-safe class models featuring parameterless constructors (necessary for System.Text.Json deserialization) and parameterized constructor overloads for clean unit test authoring.
