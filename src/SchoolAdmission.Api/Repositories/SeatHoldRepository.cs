@@ -4,11 +4,11 @@ using SchoolAdmission.Api.Models;
 
 namespace SchoolAdmission.Api.Repositories;
 
-public class HoldRepository : IHoldRepository
+public class SeatHoldRepository : ISeatHoldRepository
 {
     private readonly AppDbContext _dbContext;
 
-    public HoldRepository(AppDbContext dbContext)
+    public SeatHoldRepository(AppDbContext dbContext)
     {
         _dbContext = dbContext;
     }
@@ -71,4 +71,3 @@ public class HoldRepository : IHoldRepository
         await _dbContext.Holds.AddAsync(hold, ct);
     }
 }
-

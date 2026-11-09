@@ -49,7 +49,7 @@ public class HoldCleanupBackgroundService : BackgroundService
     private async Task SweepExpiredHoldsAsync(CancellationToken stoppingToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        var holdRepository = scope.ServiceProvider.GetRequiredService<IHoldRepository>();
+        var holdRepository = scope.ServiceProvider.GetRequiredService<ISeatHoldRepository>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var utcNow = DateTime.UtcNow;

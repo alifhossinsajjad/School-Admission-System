@@ -9,9 +9,9 @@ namespace SchoolAdmission.Api.Controllers;
 [Route("me")]
 public class MeController : ControllerBase
 {
-    private readonly IHoldService _holdService;
+    private readonly ISeatHoldService _holdService;
 
-    public MeController(IHoldService holdService)
+    public MeController(ISeatHoldService holdService)
     {
         _holdService = holdService;
     }

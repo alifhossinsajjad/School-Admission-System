@@ -11,16 +11,16 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddRepositories(this IServiceCollection services)
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<IClassRepository, ClassRepository>();
-        services.AddScoped<IHoldRepository, HoldRepository>();
+        services.AddScoped<ISchoolClassRepository, SchoolClassRepository>();
+        services.AddScoped<ISeatHoldRepository, SeatHoldRepository>();
 
         return services;
     }
 
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        services.AddScoped<IClassService, ClassService>();
-        services.AddScoped<IHoldService, HoldService>();
+        services.AddScoped<ISchoolClassService, SchoolClassService>();
+        services.AddScoped<ISeatHoldService, SeatHoldService>();
         services.AddHostedService<HoldCleanupBackgroundService>();
 
         return services;

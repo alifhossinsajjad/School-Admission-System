@@ -4,11 +4,11 @@ using SchoolAdmission.Api.Models;
 
 namespace SchoolAdmission.Api.Repositories;
 
-public class ClassRepository : IClassRepository
+public class SchoolClassRepository : ISchoolClassRepository
 {
     private readonly AppDbContext _dbContext;
 
-    public ClassRepository(AppDbContext dbContext)
+    public SchoolClassRepository(AppDbContext dbContext)
     {
         _dbContext = dbContext;
     }
@@ -48,4 +48,3 @@ public class ClassRepository : IClassRepository
         await _dbContext.Classes.AddAsync(schoolClass, ct);
     }
 }
-

@@ -9,10 +9,10 @@ namespace SchoolAdmission.Api.Controllers;
 [Route("classes")]
 public class ClassesController : ControllerBase
 {
-    private readonly IClassService _classService;
-    private readonly IHoldService _holdService;
+    private readonly ISchoolClassService _classService;
+    private readonly ISeatHoldService _holdService;
 
-    public ClassesController(IClassService classService, IHoldService holdService)
+    public ClassesController(ISchoolClassService classService, ISeatHoldService holdService)
     {
         _classService = classService;
         _holdService = holdService;

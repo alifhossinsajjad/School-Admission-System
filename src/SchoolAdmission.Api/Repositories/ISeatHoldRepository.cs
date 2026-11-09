@@ -2,7 +2,7 @@ using SchoolAdmission.Api.Models;
 
 namespace SchoolAdmission.Api.Repositories;
 
-public interface IHoldRepository
+public interface ISeatHoldRepository
 {
     Task<SeatHold?> GetByIdAsync(string holdId, CancellationToken ct = default);
     Task<SeatHold?> GetByIdTrackingAsync(string holdId, CancellationToken ct = default);
@@ -12,4 +12,3 @@ public interface IHoldRepository
     Task<IReadOnlyList<SeatHold>> GetExpiredHoldsAsync(DateTime utcNow, CancellationToken ct = default);
     Task AddAsync(SeatHold hold, CancellationToken ct = default);
 }
-

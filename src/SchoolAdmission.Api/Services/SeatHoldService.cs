@@ -6,20 +6,20 @@ using SchoolAdmission.Api.Repositories;
 
 namespace SchoolAdmission.Api.Services;
 
-public class HoldService : IHoldService
+public class SeatHoldService : ISeatHoldService
 {
-    private readonly IClassRepository _classRepository;
-    private readonly IHoldRepository _holdRepository;
+    private readonly ISchoolClassRepository _classRepository;
+    private readonly ISeatHoldRepository _holdRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<HoldService> _logger;
+    private readonly ILogger<SeatHoldService> _logger;
 
-    public HoldService(
-        IClassRepository classRepository,
-        IHoldRepository holdRepository,
+    public SeatHoldService(
+        ISchoolClassRepository classRepository,
+        ISeatHoldRepository holdRepository,
         IUnitOfWork unitOfWork,
         IConfiguration configuration,
-        ILogger<HoldService> logger)
+        ILogger<SeatHoldService> logger)
     {
         _classRepository = classRepository;
         _holdRepository = holdRepository;
@@ -35,7 +35,7 @@ public class HoldService : IHoldService
         var normalizedStudentId = ValidateAndNormalizeStudentId(studentId);
         var holdDurationSeconds = GetHoldDurationSeconds();
 
-        // 2. Atomic Transaction via UnitOfWork (100% DRY, no manual try/catch/rollback boilerplate)
+        // 2. Atomic Transaction via UnitOfWork (100% DRY, zero manual try/catch/rollback boilerplate)
         return await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             var utcNow = DateTime.UtcNow;

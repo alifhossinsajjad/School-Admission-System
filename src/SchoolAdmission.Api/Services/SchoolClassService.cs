@@ -6,18 +6,18 @@ using SchoolAdmission.Api.Repositories;
 
 namespace SchoolAdmission.Api.Services;
 
-public class ClassService : IClassService
+public class SchoolClassService : ISchoolClassService
 {
-    private readonly IClassRepository _classRepository;
-    private readonly IHoldRepository _holdRepository;
+    private readonly ISchoolClassRepository _classRepository;
+    private readonly ISeatHoldRepository _holdRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<ClassService> _logger;
+    private readonly ILogger<SchoolClassService> _logger;
 
-    public ClassService(
-        IClassRepository classRepository,
-        IHoldRepository holdRepository,
+    public SchoolClassService(
+        ISchoolClassRepository classRepository,
+        ISeatHoldRepository holdRepository,
         IUnitOfWork unitOfWork,
-        ILogger<ClassService> logger)
+        ILogger<SchoolClassService> logger)
     {
         _classRepository = classRepository;
         _holdRepository = holdRepository;
