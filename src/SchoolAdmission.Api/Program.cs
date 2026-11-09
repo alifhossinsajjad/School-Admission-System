@@ -17,7 +17,7 @@ builder.WebHost.ConfigureKestrel(options =>
     }
     else if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
     {
-        options.ListenAnyIP(8080);
+        options.ListenAnyIP(5000);
     }
 });
 
