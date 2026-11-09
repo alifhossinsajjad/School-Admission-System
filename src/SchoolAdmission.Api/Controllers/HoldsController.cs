@@ -9,11 +9,11 @@ namespace SchoolAdmission.Api.Controllers;
 [Route("holds")]
 public class HoldsController : ControllerBase
 {
-    private readonly IAdmissionService _admissionService;
+    private readonly IHoldService _holdService;
 
-    public HoldsController(IAdmissionService admissionService)
+    public HoldsController(IHoldService holdService)
     {
-        _admissionService = admissionService;
+        _holdService = holdService;
     }
 
     [HttpGet("{holdId}")]
@@ -21,7 +21,7 @@ public class HoldsController : ControllerBase
         [FromRoute] string holdId,
         CancellationToken ct)
     {
-        var hold = await _admissionService.GetHoldByIdAsync(holdId, ct);
+        var hold = await _holdService.GetHoldByIdAsync(holdId, ct);
         if (hold == null)
         {
             throw new NotFoundException($"Hold with id '{holdId}' was not found.");
@@ -41,7 +41,7 @@ public class HoldsController : ControllerBase
             throw new BadRequestException("Header 'X-Student-Id' is required.");
         }
 
-        var result = await _admissionService.ConfirmHoldAsync(holdId, studentId, ct);
+        var result = await _holdService.ConfirmHoldAsync(holdId, studentId, ct);
         return Ok(result);
     }
 
@@ -56,8 +56,7 @@ public class HoldsController : ControllerBase
             throw new BadRequestException("Header 'X-Student-Id' is required.");
         }
 
-        await _admissionService.CancelHoldAsync(holdId, studentId, ct);
+        await _holdService.CancelHoldAsync(holdId, studentId, ct);
         return NoContent();
     }
 }
-

@@ -9,11 +9,13 @@ namespace SchoolAdmission.Api.Controllers;
 [Route("classes")]
 public class ClassesController : ControllerBase
 {
-    private readonly IAdmissionService _admissionService;
+    private readonly IClassService _classService;
+    private readonly IHoldService _holdService;
 
-    public ClassesController(IAdmissionService admissionService)
+    public ClassesController(IClassService classService, IHoldService holdService)
     {
-        _admissionService = admissionService;
+        _classService = classService;
+        _holdService = holdService;
     }
 
     [HttpPost]
@@ -26,14 +28,14 @@ public class ClassesController : ControllerBase
             throw new BadRequestException("Request body cannot be null.");
         }
 
-        var result = await _admissionService.CreateClassAsync(request, ct);
+        var result = await _classService.CreateClassAsync(request, ct);
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<ClassResponse>>> GetAllClasses(CancellationToken ct)
     {
-        var classes = await _admissionService.GetAllClassesAsync(ct);
+        var classes = await _classService.GetAllClassesAsync(ct);
         return Ok(classes);
     }
 
@@ -42,7 +44,7 @@ public class ClassesController : ControllerBase
         [FromRoute] string classId,
         CancellationToken ct)
     {
-        var classData = await _admissionService.GetClassByIdAsync(classId, ct);
+        var classData = await _classService.GetClassByIdAsync(classId, ct);
         if (classData == null)
         {
             throw new NotFoundException($"Class with id '{classId}' was not found.");
@@ -62,8 +64,7 @@ public class ClassesController : ControllerBase
             throw new BadRequestException("Header 'X-Student-Id' is required.");
         }
 
-        var result = await _admissionService.CreateHoldAsync(classId, studentId, ct);
+        var result = await _holdService.CreateHoldAsync(classId, studentId, ct);
         return StatusCode(StatusCodes.Status201Created, result);
     }
 }
-

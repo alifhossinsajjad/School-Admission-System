@@ -9,11 +9,11 @@ namespace SchoolAdmission.Api.Controllers;
 [Route("me")]
 public class MeController : ControllerBase
 {
-    private readonly IAdmissionService _admissionService;
+    private readonly IHoldService _holdService;
 
-    public MeController(IAdmissionService admissionService)
+    public MeController(IHoldService holdService)
     {
-        _admissionService = admissionService;
+        _holdService = holdService;
     }
 
     [HttpGet("holds")]
@@ -26,8 +26,7 @@ public class MeController : ControllerBase
             throw new BadRequestException("Header 'X-Student-Id' is required.");
         }
 
-        var holds = await _admissionService.GetStudentHoldsAsync(studentId, ct);
+        var holds = await _holdService.GetStudentHoldsAsync(studentId, ct);
         return Ok(holds);
     }
 }
-

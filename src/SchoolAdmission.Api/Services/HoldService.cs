@@ -9,19 +9,19 @@ using SchoolAdmission.Api.Models;
 
 namespace SchoolAdmission.Api.Services;
 
-public class AdmissionService : IAdmissionService
+public class HoldService : IHoldService
 {
     private readonly AppDbContext _dbContext;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<AdmissionService> _logger;
+    private readonly ILogger<HoldService> _logger;
 
     // In-memory per-class locks for non-Postgres providers (e.g. SQLite / InMemory in test environments)
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> _classLocks = new();
 
-    public AdmissionService(
+    public HoldService(
         AppDbContext dbContext,
         IConfiguration configuration,
-        ILogger<AdmissionService> logger)
+        ILogger<HoldService> logger)
     {
         _dbContext = dbContext;
         _configuration = configuration;
@@ -43,95 +43,6 @@ public class AdmissionService : IAdmissionService
         }
 
         return 600; // Default 10 minutes (600 seconds)
-    }
-
-    public async Task<CreateClassResponse> CreateClassAsync(CreateClassRequest request, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(request.Name))
-        {
-            throw new BadRequestException("Class name cannot be empty.");
-        }
-
-        if (request.TotalSeats <= 0)
-        {
-            throw new BadRequestException("Total seats must be greater than zero.");
-        }
-
-        var newClass = new SchoolClass
-        {
-            Id = "c_" + Guid.NewGuid().ToString("N")[..8],
-            Name = request.Name.Trim(),
-            TotalSeats = request.TotalSeats,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _dbContext.Classes.Add(newClass);
-        await _dbContext.SaveChangesAsync(ct);
-
-        _logger.LogInformation("Created class {ClassId} ({ClassName}) with {TotalSeats} seats",
-            newClass.Id, newClass.Name, newClass.TotalSeats);
-
-        return new CreateClassResponse(newClass.Id, newClass.Name, newClass.TotalSeats);
-    }
-
-    public async Task<IReadOnlyList<ClassResponse>> GetAllClassesAsync(CancellationToken ct = default)
-    {
-        var utcNow = DateTime.UtcNow;
-
-        var classes = await _dbContext.Classes
-            .AsNoTracking()
-            .OrderBy(c => c.Name)
-            .Select(c => new
-            {
-                c.Id,
-                c.Name,
-                c.TotalSeats,
-                HeldCount = c.Holds.Count(h => h.Status == HoldStatus.Held && h.ExpiresAt > utcNow),
-                ConfirmedCount = c.Holds.Count(h => h.Status == HoldStatus.Confirmed)
-            })
-            .ToListAsync(ct);
-
-        return classes.Select(c => new ClassResponse(
-            c.Id,
-            c.Name,
-            c.TotalSeats,
-            c.HeldCount,
-            c.ConfirmedCount,
-            Math.Max(0, c.TotalSeats - (c.HeldCount + c.ConfirmedCount))
-        )).ToList();
-    }
-
-    public async Task<ClassResponse?> GetClassByIdAsync(string classId, CancellationToken ct = default)
-    {
-        var utcNow = DateTime.UtcNow;
-
-        var classData = await _dbContext.Classes
-            .AsNoTracking()
-            .Where(c => c.Id == classId)
-            .Select(c => new
-            {
-                c.Id,
-                c.Name,
-                c.TotalSeats,
-                HeldCount = c.Holds.Count(h => h.Status == HoldStatus.Held && h.ExpiresAt > utcNow),
-                ConfirmedCount = c.Holds.Count(h => h.Status == HoldStatus.Confirmed)
-            })
-            .FirstOrDefaultAsync(ct);
-
-        if (classData == null)
-        {
-            return null;
-        }
-
-        return new ClassResponse(
-            classData.Id,
-            classData.Name,
-            classData.TotalSeats,
-            classData.HeldCount,
-            classData.ConfirmedCount,
-            Math.Max(0, classData.TotalSeats - (classData.HeldCount + classData.ConfirmedCount))
-        );
     }
 
     public async Task<CreateHoldResponse> CreateHoldAsync(string classId, string studentId, CancellationToken ct = default)
@@ -190,7 +101,7 @@ public class AdmissionService : IAdmissionService
 
                 var utcNow = DateTime.UtcNow;
 
-                // Rule 3: একজন শিক্ষার্থী একটা class-এ একই সময়ে একটার বেশি active আবেদন বা নিশ্চিত ভর্তি রাখতে পারবে না।
+               // Rule 3: A student cannot have more than one active application or confirmed admission for the same class at any given time.
                 var existingActiveOrConfirmed = await _dbContext.Holds.AnyAsync(h =>
                     h.ClassId == classId &&
                     h.StudentId == normalizedStudentId &&
@@ -202,7 +113,7 @@ public class AdmissionService : IAdmissionService
                     throw new ConflictException("Student already has an active hold or confirmed admission in this class.");
                 }
 
-                // Rule 1: কোনো অবস্থাতেই একটা class-এ held + confirmed সংখ্যা totalSeats-এর বেশি হবে না
+             // Rule 1: Under no circumstances shall the sum of 'held' and 'confirmed' in a class exceed 'totalSeats'.
                 var currentHeldSeats = await _dbContext.Holds.CountAsync(h =>
                     h.ClassId == classId &&
                     h.Status == HoldStatus.Held &&
@@ -310,13 +221,13 @@ public class AdmissionService : IAdmissionService
             throw new NotFoundException($"Hold with id '{holdId}' was not found.");
         }
 
-        // Rule 4: শুধু নিজের, মেয়াদ না পেরোনো HELD আবেদন confirm করা যাবে।
+       // Rule 4: You can only confirm your own 'HELD' applications that have not yet expired.
         if (!string.Equals(hold.StudentId, normalizedStudentId, StringComparison.OrdinalIgnoreCase))
         {
             throw new ForbiddenException("Cannot confirm an application that does not belong to you.");
         }
 
-        // Rule 5: একই আবেদনে confirm একাধিকবার এলেও confirmedSeats একবারই বাড়বে। (Idempotent)
+        // Rule 5: Even if 'confirm' appears multiple times in the same request, 'confirmedSeats' will be incremented only once. (Idempotent)
         if (hold.Status == HoldStatus.Confirmed)
         {
             return new ConfirmHoldResponse(hold.HoldId, HoldStatus.Confirmed);
