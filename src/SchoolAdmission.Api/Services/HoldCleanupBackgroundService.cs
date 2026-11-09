@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using SchoolAdmission.Api.Data;
 using SchoolAdmission.Api.Models;
+using SchoolAdmission.Api.Repositories;
 
 namespace SchoolAdmission.Api.Services;
 
@@ -49,13 +49,11 @@ public class HoldCleanupBackgroundService : BackgroundService
     private async Task SweepExpiredHoldsAsync(CancellationToken stoppingToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var holdRepository = scope.ServiceProvider.GetRequiredService<IHoldRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var utcNow = DateTime.UtcNow;
-
-        var expiredHolds = await dbContext.Holds
-            .Where(h => h.Status == HoldStatus.Held && h.ExpiresAt <= utcNow)
-            .ToListAsync(stoppingToken);
+        var expiredHolds = await holdRepository.GetExpiredHoldsAsync(utcNow, stoppingToken);
 
         if (expiredHolds.Count > 0)
         {
@@ -64,9 +62,8 @@ public class HoldCleanupBackgroundService : BackgroundService
                 hold.Status = HoldStatus.Expired;
             }
 
-            await dbContext.SaveChangesAsync(stoppingToken);
+            await unitOfWork.SaveChangesAsync(stoppingToken);
             _logger.LogInformation("Swept {Count} expired holds to status EXPIRED.", expiredHolds.Count);
         }
     }
 }
-

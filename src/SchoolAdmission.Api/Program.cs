@@ -24,6 +24,7 @@ builder.WebHost.ConfigureKestrel(options =>
 // 3. Register Application Services & Infrastructure
 builder.Services
     .AddDatabaseConfiguration(builder.Configuration)
+    .AddRepositories()
     .AddApplicationServices()
     .AddApplicationCors()
     .AddApiControllers()

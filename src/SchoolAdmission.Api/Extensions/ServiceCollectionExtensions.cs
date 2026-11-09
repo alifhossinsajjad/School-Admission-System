@@ -1,11 +1,22 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SchoolAdmission.Api.Data;
+using SchoolAdmission.Api.Repositories;
 using SchoolAdmission.Api.Services;
 
 namespace SchoolAdmission.Api.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddRepositories(this IServiceCollection services)
+    {
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IClassRepository, ClassRepository>();
+        services.AddScoped<IHoldRepository, HoldRepository>();
+
+        return services;
+    }
+
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IClassService, ClassService>();
@@ -51,4 +62,3 @@ public static class ServiceCollectionExtensions
         return services;
     }
 }
-
