@@ -11,13 +11,7 @@ public static class DatabaseExtensions
 
         services.AddDbContext<AppDbContext>(options =>
         {
-            options.UseNpgsql(connectionString, npgsqlOptions =>
-            {
-                npgsqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorCodesToAdd: null);
-            });
+            options.UseNpgsql(connectionString);
         });
 
         return services;

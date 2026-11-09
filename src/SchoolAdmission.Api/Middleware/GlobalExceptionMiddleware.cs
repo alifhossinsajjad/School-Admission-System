@@ -34,7 +34,8 @@ public class GlobalExceptionMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled server error occurred.");
-            await HandleExceptionAsync(context, (int)HttpStatusCode.InternalServerError, "An unexpected server error occurred.");
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            await HandleExceptionAsync(context, (int)HttpStatusCode.InternalServerError, detail);
         }
     }
 

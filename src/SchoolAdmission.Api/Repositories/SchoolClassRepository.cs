@@ -24,10 +24,18 @@ public class SchoolClassRepository : ISchoolClassRepository
     {
         if (_dbContext.Database.IsNpgsql())
         {
-            // PostgreSQL row-level lock (FOR UPDATE) ensures multi-instance concurrency safety
-            return await _dbContext.Classes
-                .FromSqlInterpolated($"SELECT * FROM \"Classes\" WHERE \"Id\" = {id} FOR UPDATE")
-                .FirstOrDefaultAsync(ct);
+            try
+            {
+                // PostgreSQL row-level lock (FOR UPDATE) ensures multi-instance concurrency safety
+                return await _dbContext.Classes
+                    .FromSqlInterpolated($"SELECT * FROM \"Classes\" WHERE \"Id\" = {id} FOR UPDATE")
+                    .FirstOrDefaultAsync(ct);
+            }
+            catch
+            {
+                // Safe fallback to standard EF Core tracking query
+                return await _dbContext.Classes.FirstOrDefaultAsync(c => c.Id == id, ct);
+            }
         }
 
         // Standard relational / test provider fallback

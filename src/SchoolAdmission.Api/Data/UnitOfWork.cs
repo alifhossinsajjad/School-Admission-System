@@ -21,19 +21,23 @@ public class UnitOfWork : IUnitOfWork
             return result;
         }
 
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
-        try
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            var result = await action();
-            await _dbContext.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
-            return result;
-        }
-        catch
-        {
-            await transaction.RollbackAsync(ct);
-            throw;
-        }
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
+            try
+            {
+                var result = await action();
+                await _dbContext.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+                return result;
+            }
+            catch
+            {
+                await transaction.RollbackAsync(ct);
+                throw;
+            }
+        });
     }
 
     public async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default)
@@ -45,18 +49,22 @@ public class UnitOfWork : IUnitOfWork
             return;
         }
 
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
-        try
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            await action();
-            await _dbContext.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
-        }
-        catch
-        {
-            await transaction.RollbackAsync(ct);
-            throw;
-        }
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
+            try
+            {
+                await action();
+                await _dbContext.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(ct);
+                throw;
+            }
+        });
     }
 
     public Task<int> SaveChangesAsync(CancellationToken ct = default)
