@@ -6,6 +6,9 @@ obj/
 *.suo
 .vs/
 .idea/
-
+.vscode/
 config.bat
-node_modules
+node_modules/
+.env
+.env.local
+.env.*.local
