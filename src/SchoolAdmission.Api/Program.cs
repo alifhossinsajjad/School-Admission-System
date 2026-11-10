@@ -38,14 +38,20 @@ await app.EnsureDatabaseSchemaAsync();
 // 5. Middleware Pipeline
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger Documentation in all environments (Development & Cloud Live Hosting)
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "School Admission API v1");
+    options.RoutePrefix = "swagger";
+});
 
 app.UseCors();
 app.UseAuthorization();
+
+// Root route redirects to Swagger UI for easy live inspection
+app.MapGet("/", () => Results.Redirect("/swagger"));
+
 app.MapControllers();
 
 app.Run();
